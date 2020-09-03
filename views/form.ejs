@@ -1,0 +1,48 @@
+<%- include("header") -%>
+
+<div class="container-fluid">
+
+     <div class="row">
+          <div class="section-one col-lg-6 col-md-6 col-sm-12">
+               <h1 class="display-4">Authentication Successful</h1>
+               <img class="mb-4 headshot" src="images/thumbsup.png" width="200" height="200">
+          </div>
+          <div class="section-two col-lg-6 col-md-6 col-sm-12">
+               <img class="headshot" src="images/me.jpg" width="200" height="200">
+               <h2 class="message mb-3 px-lg-5">Enter whatever contact info you're comfortable sending so we can stay in touch!</h2>
+
+               <form class="px-lg-5" action="/" id="form-contact-details" method="post">
+               <input type="text" class="form-control top" name="name" placeholder="" required readonly>
+               <input type="text" class="form-control middle" name="email" placeholder="Email" autofocus >
+               <input type="text" class="form-control middle" name="phoneNumber" placeholder="Phone Number/Signal">
+               <input type="text" class="form-control middle" name="mastodonHandle" placeholder="Mastodon Handle">
+               <input type="text" class="form-control middle" name="twitterHandle" placeholder="Twitter Handle">
+               <input type="text" class="form-control middle" name="diasporaUser" placeholder="Diaspora* Username">
+               <input type="text" class="form-control middle" name="wtsocialUser" placeholder="WT.social Username">
+               <input type="text" class="form-control middle" name="mindsUser" placeholder="Minds Username">
+               <input type="text" class="form-control middle" name="discordUser" placeholder="Discord Username">
+               <input type="text" class="form-control middle" name="steamUser" placeholder="Steam Username">
+               <input type="text" class="form-control bottom" name="blog" placeholder="Blog/Personal Website">
+               <div class="form-bottom">
+               <p>If I were ever to send out any sort of informal personal newsletter would you want to be included?</p>
+               <input type="radio" id="no" name="newsletter" value="no" checked="checked">
+               <label for="no">No thanks</label><br>
+               <input type="radio" id="important" name="newsletter" value="important">
+               <label for="important">Only for important updates</label><br>
+               <input type="radio" id="anything" name="newsletter" value="anything">
+               <label for="anything">Yes, for anything</label>
+
+               <p class="other">
+                    Any other details or info you'd like me to have:
+               </p>
+               <textarea name="other" rows="4" cols="30"></textarea>
+               </div>
+
+               <button class="btn btn-lg btn-primary btn-block" type="submit">Send Details</button>
+
+               </form>
+          </div>
+     </div>
+</div>
+
+<%- include("footer") -%>

@@ -1,0 +1,111 @@
+html,
+body {
+  height: 100%;
+}
+
+h2 {
+     margin-bottom: 20px;
+     font-size: 2rem;
+}
+
+p {
+     font-size: 1.2rem;
+}
+
+body {
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-align: center;
+  align-items: safe center;
+  justify-content: center;
+  background-color: #f5f5f;
+}
+
+label {
+     text-align: left;
+}
+
+.section-one {
+     color: #ffffff;
+     background-color: #3b5998;
+     padding-top: 10%;
+     padding-bottom: 10%;
+}
+
+.section-two {
+     padding: 7%;
+}
+
+
+.success {
+     background-color: #73992C;
+}
+
+.failure {
+     background-color: #99584B;
+}
+
+.headshot {
+     margin: 15px;
+     border-radius: 100px;
+}
+
+.helper-text {
+     color: #8DA1CC;
+}
+
+.form-contact-details .checkbox {
+  font-weight: 400;
+}
+.form-contact-details .form-control {
+  position: relative;
+  box-sizing: border-box;
+  height: auto;
+  padding: 10px;
+  font-size: 16px;
+}
+.form-contact-details .form-control:focus {
+  z-index: 2;
+}
+.top {
+  margin-bottom: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.middle {
+     border-radius: 0;
+     margin-bottom: -1px;
+}
+.bottom {
+  margin-bottom: 20px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.intouch {
+     font-style: italic;
+}
+
+.btn {
+     margin-top: 10px;
+     margin-bottom: 40px;
+}
+
+.first-column {
+     font-weight: bold;
+     padding-right: 10px;
+}
+
+.form-bottom {
+     text-align: left;
+}
+
+.other {
+     margin-top: 15px;
+}
+
+.my-details {
+     display: flex;
+     justify-content: center;
+     text-align: left;
+}
