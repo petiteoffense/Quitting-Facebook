@@ -172,9 +172,11 @@ app.get('/quitting-facebook/auth/facebook', passport.authenticate('facebook'));
 // authentication process by attempting to obtain an access token.  If
 // access was granted, the user will be logged in.  Otherwise,
 // authentication has failed.
-app.get('quitting-facebook/auth/facebook/callback',
-  passport.authenticate('facebook', { successRedirect: '/quitting-facebook/form',
-                                      failureRedirect: '/quitting-facebook/failure' }));
+app.get('quitting-facebook/auth/facebook/callback', function(req, res) {
+     res.render("form");
+});
+  // passport.authenticate('facebook', { successRedirect: '/quitting-facebook/form',
+  //                                     failureRedirect: '/quitting-facebook/failure' }));
 
 // app.get("/quitting-facebook/authenticate", function(req, res){
 //      var facebookResponse = FB.getLoginStatus(function(response) {
