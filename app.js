@@ -98,7 +98,7 @@ passport.use(new FacebookStrategy({
           //check user table for anyone with a facebook ID of profile.id
           Friend.findOne({
               'facebook.id': profile.id
-          }, function(err, user) {
+         }, function(err, friend) {
               if (err) {
                   return done(err);
               }
