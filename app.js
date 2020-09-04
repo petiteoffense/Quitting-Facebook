@@ -9,9 +9,11 @@ const mongoose = require("mongoose");
 const encrypt = require("mongoose-encryption");
 const session = require("express-session");
 // const passport = require("passport");
-// const passportLocalMongoose = require("passport-local-mongoose");
+const passportLocalMongoose = require("passport-local-mongoose");
 const passport = require('passport')
   , FacebookStrategy = require('passport-facebook').Strategy;
+
+// const configAuth = require("/config/auth");
 
 const app = express();
 
@@ -26,43 +28,52 @@ app.use(session({
      saveUninitialized: false
 }));
 
-// app.use(passport.initialize());
-// app.use(passport.session());
+app.use(passport.initialize());
+app.use(passport.session());
 
 mongoose.connect(process.env.MONGO_CONNECT, {useNewUrlParser: true, useUnifiedTopology: true});
 mongoose.set("useCreateIndex", true);
 
 const friendsSchema = new mongoose.Schema ( {
-     dateofentry: {
-          type: String,
-          required: true
-     },
+     dateofentry: String,
+     // {
+     //      type: String,
+     //      required: true
+     //},
+     // facebook: {
+     //      provider: String,
+     //      id: String,
+     //      // {
+     //      //      type: String,
+     //      //      required: true
+     //      //},
+     //      displayName: String,
+     //      // {
+     //      //      type: String,
+     //      //      required: true
+     //      //},
+     //      name: {
+     //           familyName: String,
+     //           givenName: String,
+     //           middleName: String
+     //      },
+     //      emails: [
+     //           {
+     //           value: String,
+     //           type: String
+     //           }
+     //      ],
+     //      photos: [
+     //           {
+     //           value: String
+     //           }
+     //      ]
+     // },
      facebook: {
-          provider: String,
-          id: {
-               type: String,
-               required: true
-          },
-          displayName: {
-               type: String,
-               required: true
-          },
-          name: {
-               familyName: String,
-               givenName: String,
-               middleName: String
-          },
-          emails: [
-               {
-               value: String,
-               type: String
-               }
-          ],
-          photos: [
-               {
-               value: String
-               }
-          ]
+          id: String,
+          token: String,
+          email: String,
+          name: String
      },
      name: String,
      email: String,
@@ -82,8 +93,8 @@ const friendsSchema = new mongoose.Schema ( {
 //      password: String
 // });
 
-// friendsSchema.plugin(passportLocalMongoose);
-friendsSchema.plugin(encrypt, {secret: process.env.ENCRYPTION_KEY, encryptedFields: ["email",  "mastodon", "twitter", "diaspora", "wtsocial", "minds", "discord", "steam", "website", "newsletter"]});
+friendsSchema.plugin(passportLocalMongoose);
+friendsSchema.plugin(encrypt, {secret: process.env.ENCRYPTION_KEY, encryptedFields: ["facebook", "email",  "mastodon", "twitter", "diaspora", "wtsocial", "minds", "discord", "steam", "website", "newsletter"]});
 
 const Friend = mongoose.model('Friend', friendsSchema);
 // const User = mongoose.model("User", usersSchema);
@@ -92,40 +103,72 @@ const Friend = mongoose.model('Friend', friendsSchema);
 passport.use(new FacebookStrategy({
     clientID: process.env.FACEBOOK_APP_ID,
     clientSecret: process.env.FACEBOOK_APP_SECRET,
-    callbackURL: "https://arcane-scrubland-72310.herokuapp.com/quitting-facebook/auth/facebook/callback"
+    callbackURL: process.env.CALLBACK_URL
   },
      function(accessToken, refreshToken, profile, done) {
           //check user table for anyone with a facebook ID of profile.id
-          Friend.findOne({
-              'facebook.id': profile.id
-         }, function(err, friend) {
-              if (err) {
-                  return done(err);
-              }
-              //No user was found... so create a new user with values from Facebook (all the profile. stuff)
-              if (!friend) {
-                  friend = new Friend ({
-                      //now in the future searching on User.findOne({'facebook.id': profile.id } will match because of this next line
-                      facebook: profile._json
-                  });
-                  friend.save(function(err) {
-                      if (err) {
-                           console.log(err);
-                           res.render("failure");
-                      }
-                      return done(err, friend);
-                  });
-              } else {
-                  //found user. Return
-                  return done(err, friend);
-              }
-          });
+         //  Friend.findOne({
+         //      'facebook.id': profile.id
+         // }, function(err, friend) {
+         //      if (err) {
+         //          return done(err);
+         //      }
+         //      //No user was found... so create a new user with values from Facebook (all the profile. stuff)
+         //      if (!friend) {
+         //          friend = new Friend ({
+         //              //now in the future searching on User.findOne({'facebook.id': profile.id } will match because of this next line
+         //              facebook: profile._json
+         //          });
+         //          friend.save(function(err) {
+         //              if (err) {
+         //                   console.log(err);
+         //                   res.render("failure");
+         //              }
+         //              return done(err, friend);
+         //          });
+         //      } else {
+         //          //found user. Return
+         //          return done(err, friend);
+         //      }
+         //  });
+         process.nextTick(function(){
+              Friend.findOne({"facebook.id": profile.id}, function(err, friend){
+                   if (err) {
+                        return done(err);
+                   }
+                   if (friend) {
+                        return done(null, friend);
+                   } else {
+                        const newFriend = new Friend();
+                        newFriend.facebook.id = profile.id;
+                        newFriend.facebook.token = accessToken;
+                        newFriend.facebook.name = profile.name.givenName + " " + profile.name.familyName;
+                        // newFriend.facebook.email = profile.emails[0].value;
+
+                        newFriend.save(function(err){
+                             if(err) {
+                                  throw err;
+                             } else {
+                                  return done(null, newFriend);
+                             }
+                        });
+                    }
+
+              });
+         });
       }
   ));
 // passport.use(Friend.createStrategy());
 
-// passport.serializeUser(Friend.serializeUser());
-// passport.deserializeUser(Friend.deserializeUser());
+passport.serializeUser(function(friend, done){
+     done(null, friend.id);
+});
+
+passport.deserializeUser(function(id, done){
+     Friend.findById(id, function(err, friend){
+          done(err, friend);
+     });
+});
 
 // const friendTest = new Friend ( {
 //      name: "Bob Test",
@@ -216,7 +259,7 @@ app.get("/quitting-facebook/form", function(req, res){
      res.render("form");
 });
 
-app.get("/success", function(req, res){
+app.get("/quitting-facebook/success", function(req, res){
      res.render("success");
 });
 
