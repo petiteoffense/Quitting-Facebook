@@ -29,19 +29,53 @@ app.use(passport.session());
 mongoose.connect(process.env.MONGO_CONNECT, {useNewUrlParser: true, useUnifiedTopology: true});
 mongoose.set("useCreateIndex", true);
 
-const friendsSchema = new mongoose.Schema ( {
-     previousSubmission: Boolean,
+const friendsFacebookOnlySchema = new mongoose.Schema ( {
      dateOfEntry: {
           type: String,
           required: true
      },
-     dateOfLastUpdate: String,
+     contactExists: {
+          type: Boolean,
+          required: true
+     },
      facebook: {
           id: {
                type: String,
                required: true
           },
           token: {
+               type: String,
+               required: true
+          },
+          displayName: {
+               type: String,
+               required: true
+          }
+     },
+});
+
+friendsFacebookOnlySchema.plugin(encrypt, {secret: process.env.ENCRYPTION_KEY, encryptedFields: ["dateOfEntry", "facebook.token", "facebook.displayName"]});
+
+const Friend = mongoose.model('Friend', friendsFacebookOnlySchema);
+
+passport.serializeUser(function(friend, done){
+     done(null, friend.id);
+});
+
+passport.deserializeUser(function(id, done){
+     Friend.findById(id, function(err, friend){
+          done(err, friend);
+     });
+});
+
+const friendsContactSchema = new mongoose.Schema ( {
+     dateOfFirstEntry: {
+          type: String,
+          required: true
+     },
+     dateOfLastUpdate: String,
+     facebook: {
+          id: {
                type: String,
                required: true
           },
@@ -66,19 +100,9 @@ const friendsSchema = new mongoose.Schema ( {
 });
 
 
-// friendsSchema.plugin(encrypt, {secret: process.env.ENCRYPTION_KEY, encryptedFields: ["facebook", "email",  "mastodon", "twitter", "diaspora", "wtsocial", "minds", "discord", "steam", "website", "newsletter"]});
+friendsContactSchema.plugin(encrypt, {secret: process.env.ENCRYPTION_KEY, encryptedFields: ["dateOfFirstEntry", "dateOfLastUpdate", "facebook.displayName", "phone", "email",  "mastodon", "twitter", "diaspora", "wtsocial", "minds", "discord", "steam", "website", "newsletter", "otherInfo"]});
 
-const Friend = mongoose.model('Friend', friendsSchema);
-
-passport.serializeUser(function(friend, done){
-     done(null, friend.id);
-});
-
-passport.deserializeUser(function(id, done){
-     Friend.findById(id, function(err, friend){
-          done(err, friend);
-     });
-});
+const Contact = mongoose.model('Contact', friendsContactSchema);
 
 passport.use(new FacebookStrategy({
     clientID: process.env.FACEBOOK_APP_ID,
@@ -102,7 +126,8 @@ passport.use(new FacebookStrategy({
                                   id: profile.id,
                                   token: accessToken,
                                   displayName: profile.displayName
-                              }
+                             },
+                             contactExists: false
                         });
 
                         newFriend.save(function(err){
@@ -120,7 +145,8 @@ passport.use(new FacebookStrategy({
   ));
 
 app.get("/quitting-facebook", function(req, res){
-     res.render("password-wall");
+     // res.render("password-wall");
+     res.render("quitting-facebook");
 });
 
 app.post("/quitting-facebook", function(req, res){
@@ -157,93 +183,214 @@ app.get('/quitting-facebook/auth/facebook/form',
 
 app.get("/quitting-facebook/form", function(req, res){
      if (req.isAuthenticated()){
-          if (req.user.previousSubmission === true) {
+
+          if (req.user.contactExists === true) {
+               //redirects to update form
                res.redirect("/quitting-facebook/update");
           } else {
+               //renders first-time form, passing the Facebook display name into the form's 'name' field automatically
                const fbDisplayName = req.user.facebook.displayName;
                res.render('form', {fbDisplayName: fbDisplayName});
           }
+
      } else {
+          //redirect to app home if user is not authenticated
           res.redirect("/quitting-facebook");
      }
 });
 
 app.post("/quitting-facebook/form", function(req, res){
      if (req.isAuthenticated()){
-          const date = new Date();
+          //check whether user has previously submitted contact information and progress through update process or first entry process accordingly
+          if (req.user.contactExists === true) { //update
 
-          Friend.updateOne({"facebook.id": req.user.facebook.id}, {
-               "previousSubmission": true,
-               "dateOfLastUpdate": date,
-               "name": req.body.name,
-               "phone": req.body.phoneNumber,
-               "email": req.body.email,
-               "mastodon": req.body.mastodonHandle,
-               "twitter": req.body.twitterHandle,
-               "diaspora": req.body.diasporaUser,
-               "wtsocial": req.body.wtsocialUser,
-               "minds": req.body.mindsUser,
-               "discord": req.body.discordUser,
-               "steam": req.body.steamUser,
-               "website": req.body.blog,
-               "newsletter": req.body.newsletter,
-               "otherInfo": req.body.other
-          }, function(err){
-               if (err) {
-                    console.log(err);
-                    res.render("failure");
-               } else {
-                    const storedName = req.body.name;
-                    const storedPhone = req.body.phoneNumber;
-                    const storedEmail = req.body.email;
-                    const storedMastodon = req.body.mastodonHandle;
-                    const storedTwitter = req.body.twitterHandle;
-                    const storedDiaspora = req.body.diasporaUser;
-                    const storedWtsocial = req.body.wtsocialUser;
-                    const storedMinds = req.body.mindsUser;
-                    const storedDiscord = req.body.discordUser;
-                    const storedSteam = req.body.steamUser;
-                    const storedWebsite = req.body.blog;
-                    const storedNewsletter = req.body.newsletter;
-                    const storedOther = req.body.other;
+               Contact.findOne({"facebook.id": req.user.facebook.id}, function(err, contact){
+                    if(err){
+                         console.log(err);
+                         res.render("failure");
+                    } else {
+                         const date = new Date();
 
-                    const myEmail = process.env.MY_EMAIL;
-                    const myPhone = process.env.MY_PHONE;
-                    const myMastodon = process.env.MY_MASTODON;
-                    const myDiaspora = process.env.MY_DIASPORA;
-                    const myWtsocial = process.env.MY_WTSOCIAL;
-                    const myMinds = process.env.MY_MINDS;
-                    const myDiscord = process.env.MY_DISCORD;
-                    const mySteam = process.env.MY_STEAM;
-                    const myWebsite = process.env.MY_WEBSITE;
+                         const updatedContact = new Contact ( {
+                              dateOfFirstEntry: contact.dateOfFirstEntry,
+                              dateOfLastUpdate: date,
+                              facebook: {
+                                   id: req.user.facebook.id,
+                                   displayName: req.user.facebook.displayName
+                              },
+                              name: req.body.name,
+                              phone: req.body.phoneNumber,
+                              email: req.body.email,
+                              mastodon: req.body.mastodonHandle,
+                              twitter: req.body.twitterHandle,
+                              diaspora: req.body.diasporaUser,
+                              wtsocial: req.body.wtsocialUser,
+                              minds: req.body.mindsUser,
+                              discord: req.body.discordUser,
+                              steam: req.body.steamUser,
+                              website: req.body.blog,
+                              newsletter: req.body.newsletter,
+                              otherInfo: req.body.other
+                         });
+
+                         updatedContact.save(function(err){
+                              if (err) {
+                                   console.log(err);
+                                   res.render("failure");
+                              } else {
+                                   //delete previous contact document
+                                   Contact.deleteOne({"_id": contact.id}, function(err){
+                                        if(err) {
+                                             console.log(err);
+                                        }
+                                   });
+
+                                   //prepare submitted data to be passed into the success page for review
+                                   const storedName = req.body.name;
+                                   const storedPhone = req.body.phoneNumber;
+                                   const storedEmail = req.body.email;
+                                   const storedMastodon = req.body.mastodonHandle;
+                                   const storedTwitter = req.body.twitterHandle;
+                                   const storedDiaspora = req.body.diasporaUser;
+                                   const storedWtsocial = req.body.wtsocialUser;
+                                   const storedMinds = req.body.mindsUser;
+                                   const storedDiscord = req.body.discordUser;
+                                   const storedSteam = req.body.steamUser;
+                                   const storedWebsite = req.body.blog;
+                                   const storedNewsletter = req.body.newsletter;
+                                   const storedOther = req.body.other;
+
+                                   //prepare own contact data to be shared with user on success page
+                                   const myEmail = process.env.MY_EMAIL;
+                                   const myPhone = process.env.MY_PHONE;
+                                   const myMastodon = process.env.MY_MASTODON;
+                                   const myDiaspora = process.env.MY_DIASPORA;
+                                   const myWtsocial = process.env.MY_WTSOCIAL;
+                                   const myMinds = process.env.MY_MINDS;
+                                   const myDiscord = process.env.MY_DISCORD;
+                                   const mySteam = process.env.MY_STEAM;
+                                   const myWebsite = process.env.MY_WEBSITE;
 
 
-                    res.render('success', {
-                         storedName: storedName,
-                         storedEmail: storedEmail,
-                         storedPhone: storedPhone,
-                         storedMastodon: storedMastodon,
-                         storedTwitter: storedTwitter,
-                         storedDiaspora: storedDiaspora,
-                         storedWtsocial: storedWtsocial,
-                         storedMinds: storedMinds,
-                         storedDiscord: storedDiscord,
-                         storedSteam: storedSteam,
-                         storedWebsite: storedWebsite,
-                         storedNewsletter: storedNewsletter,
-                         storedOther: storedOther,
-                         myEmail: myEmail,
-                         myPhone: myPhone,
-                         myMastodon: myMastodon,
-                         myDiaspora: myDiaspora,
-                         myWtsocial: myWtsocial,
-                         myMinds: myMinds,
-                         myDiscord: myDiscord,
-                         mySteam: mySteam,
-                         myWebsite: myWebsite
-                    });
-               }
-          });
+                                   res.render('success', {
+                                        storedName: storedName,
+                                        storedEmail: storedEmail,
+                                        storedPhone: storedPhone,
+                                        storedMastodon: storedMastodon,
+                                        storedTwitter: storedTwitter,
+                                        storedDiaspora: storedDiaspora,
+                                        storedWtsocial: storedWtsocial,
+                                        storedMinds: storedMinds,
+                                        storedDiscord: storedDiscord,
+                                        storedSteam: storedSteam,
+                                        storedWebsite: storedWebsite,
+                                        storedNewsletter: storedNewsletter,
+                                        storedOther: storedOther,
+                                        myEmail: myEmail,
+                                        myPhone: myPhone,
+                                        myMastodon: myMastodon,
+                                        myDiaspora: myDiaspora,
+                                        myWtsocial: myWtsocial,
+                                        myMinds: myMinds,
+                                        myDiscord: myDiscord,
+                                        mySteam: mySteam,
+                                        myWebsite: myWebsite
+                                   });
+                              }
+                         });
+                    }
+               });
+          } else { //first entry
+
+               const date = new Date();
+
+               const newContact = new Contact ( {
+                    dateOfFirstEntry: date,
+                    facebook: {
+                         id: req.user.facebook.id,
+                         displayName: req.user.facebook.displayName
+                    },
+                    name: req.body.name,
+                    phone: req.body.phoneNumber,
+                    email: req.body.email,
+                    mastodon: req.body.mastodonHandle,
+                    twitter: req.body.twitterHandle,
+                    diaspora: req.body.diasporaUser,
+                    wtsocial: req.body.wtsocialUser,
+                    minds: req.body.mindsUser,
+                    discord: req.body.discordUser,
+                    steam: req.body.steamUser,
+                    website: req.body.blog,
+                    newsletter: req.body.newsletter,
+                    otherInfo: req.body.other
+               });
+
+               newContact.save(function(err){
+                    if (err) {
+                         console.log(err);
+                         res.render("failure");
+                    } else {
+                         Friend.updateOne({"facebook.id": req.user.facebook.id}, {contactExists: true}, function(err){
+                              if (err){
+                                   console.log(err);
+                              }
+                         });
+
+                         //prepare submitted data to be passed into the success page for review
+                         const storedName = req.body.name;
+                         const storedPhone = req.body.phoneNumber;
+                         const storedEmail = req.body.email;
+                         const storedMastodon = req.body.mastodonHandle;
+                         const storedTwitter = req.body.twitterHandle;
+                         const storedDiaspora = req.body.diasporaUser;
+                         const storedWtsocial = req.body.wtsocialUser;
+                         const storedMinds = req.body.mindsUser;
+                         const storedDiscord = req.body.discordUser;
+                         const storedSteam = req.body.steamUser;
+                         const storedWebsite = req.body.blog;
+                         const storedNewsletter = req.body.newsletter;
+                         const storedOther = req.body.other;
+
+                         //prepare own contact data to be shared with user on success page
+                         const myEmail = process.env.MY_EMAIL;
+                         const myPhone = process.env.MY_PHONE;
+                         const myMastodon = process.env.MY_MASTODON;
+                         const myDiaspora = process.env.MY_DIASPORA;
+                         const myWtsocial = process.env.MY_WTSOCIAL;
+                         const myMinds = process.env.MY_MINDS;
+                         const myDiscord = process.env.MY_DISCORD;
+                         const mySteam = process.env.MY_STEAM;
+                         const myWebsite = process.env.MY_WEBSITE;
+
+
+                         res.render('success', {
+                              storedName: storedName,
+                              storedEmail: storedEmail,
+                              storedPhone: storedPhone,
+                              storedMastodon: storedMastodon,
+                              storedTwitter: storedTwitter,
+                              storedDiaspora: storedDiaspora,
+                              storedWtsocial: storedWtsocial,
+                              storedMinds: storedMinds,
+                              storedDiscord: storedDiscord,
+                              storedSteam: storedSteam,
+                              storedWebsite: storedWebsite,
+                              storedNewsletter: storedNewsletter,
+                              storedOther: storedOther,
+                              myEmail: myEmail,
+                              myPhone: myPhone,
+                              myMastodon: myMastodon,
+                              myDiaspora: myDiaspora,
+                              myWtsocial: myWtsocial,
+                              myMinds: myMinds,
+                              myDiscord: myDiscord,
+                              mySteam: mySteam,
+                              myWebsite: myWebsite
+                         });
+                    }
+               });
+          }
+
      } else {
           res.redirect("/quitting-facebook");
      }
@@ -252,35 +399,46 @@ app.post("/quitting-facebook/form", function(req, res){
 
 app.get("/quitting-facebook/update", function(req, res){
      if (req.isAuthenticated()){
-          const storedName = req.user.name;
-          const storedEmail = req.user.email;
-          const storedPhone = req.user.phone;
-          const storedMastodon = req.user.mastodon;
-          const storedTwitter = req.user.twitter;
-          const storedDiaspora = req.user.diaspora;
-          const storedWtsocial = req.user.wtsocial;
-          const storedMinds = req.user.minds;
-          const storedDiscord = req.user.discord;
-          const storedSteam = req.user.steam;
-          const storedWebsite = req.user.website;
-          const storedNewsletter = req.user.newsletter;
-          const storedOther = req.user.otherInfo;
 
-          res.render('update', {
-               storedName: storedName,
-               storedEmail: storedEmail,
-               storedPhone: storedPhone,
-               storedMastodon: storedMastodon,
-               storedTwitter: storedTwitter,
-               storedDiaspora: storedDiaspora,
-               storedWtsocial: storedWtsocial,
-               storedMinds: storedMinds,
-               storedDiscord: storedDiscord,
-               storedSteam: storedSteam,
-               storedWebsite: storedWebsite,
-               storedNewsletter: storedNewsletter,
-               storedOther: storedOther
-          });
+          Contact.findOne({"facebook.id": req.user.facebook.id}, function(err, contact){
+               if(err){
+                    console.log(err);
+                    res.render("failure");
+               } else {
+                         //prepare existing data to be automatically passed into form fields to prevent accidental deletion and unnecessary
+                         //work for a user that does not wish to change every previously submitted detail
+                         const storedName = contact.name;
+                         const storedEmail = contact.email;
+                         const storedPhone = contact.phone;
+                         const storedMastodon = contact.mastodon;
+                         const storedTwitter = contact.twitter;
+                         const storedDiaspora = contact.diaspora;
+                         const storedWtsocial = contact.wtsocial;
+                         const storedMinds = contact.minds;
+                         const storedDiscord = contact.discord;
+                         const storedSteam = contact.steam;
+                         const storedWebsite = contact.website;
+                         const storedNewsletter = contact.newsletter;
+                         const storedOther = contact.otherInfo;
+
+                         res.render('update', {
+                              storedName: storedName,
+                              storedEmail: storedEmail,
+                              storedPhone: storedPhone,
+                              storedMastodon: storedMastodon,
+                              storedTwitter: storedTwitter,
+                              storedDiaspora: storedDiaspora,
+                              storedWtsocial: storedWtsocial,
+                              storedMinds: storedMinds,
+                              storedDiscord: storedDiscord,
+                              storedSteam: storedSteam,
+                              storedWebsite: storedWebsite,
+                              storedNewsletter: storedNewsletter,
+                              storedOther: storedOther
+                    });
+                    }
+               });
+
      } else {
           res.redirect("/quitting-facebook");
      }
@@ -289,11 +447,16 @@ app.get("/quitting-facebook/update", function(req, res){
 app.get("/quitting-facebook/delete", function(req, res){
      if (req.isAuthenticated()){
 
-          Friend.deleteOne({"facebook.id": req.user.facebook.id}, function(err){
+          Contact.deleteOne({"facebook.id": req.user.facebook.id}, function(err){
                if(err) {
                     console.log(err);
                     res.render("failure");
                } else {
+                    Friend.updateOne({"facebook.id": req.user.facebook.id}, {"contactExists": false}, function(err){
+                         if(err){
+                              console.log(err);
+                         }
+                    });
                     res.render("success-delete");
                }
           });
