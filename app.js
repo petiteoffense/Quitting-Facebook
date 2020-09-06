@@ -145,8 +145,7 @@ passport.use(new FacebookStrategy({
   ));
 
 app.get("/quitting-facebook", function(req, res){
-     // res.render("password-wall");
-     res.render("quitting-facebook");
+     res.render("password-wall");
 });
 
 app.post("/quitting-facebook", function(req, res){
