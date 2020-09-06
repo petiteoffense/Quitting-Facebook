@@ -6,53 +6,106 @@
           <div class="section-one success col-lg-6 col-md-6 col-sm-12">
                <h1 class="display-4">Success!</h1>
                <p class="lead">Your details have been saved.</p>
-          </div>
-          <div class="section-two col-lg-6 col-md-6 col-sm-12">
-               <img class="headshot" src="images/me.png" width="200" height="200">
+               <img class="headshot" src="/images/me.png" width="200" height="200">
                <h2 message mb-3>My contact info</h2>
-               <table class="my-details" style="width:100%">
+               <table class="contact-details" style="width:100%">
                  <tr>
                       <td class="first-column">Email:</td>
-                      <td class="my-email">example@exampe.com</td>
+                      <td class="my-email"><%=myEmail%></td>
                  </tr>
                  <tr>
                       <td class="first-column">Phone #:</td>
-                      <td class="my-phone">(555) 555-5555</td>
+                      <td class="my-phone"><%=myPhone%></td>
                  </tr>
                  <tr>
                       <td class="first-column">Mastodon:</td>
-                      <td class="my-mastodon">(555) 555-5555</td>
-                 </tr>
-                 <tr>
-                      <td class="first-column">Twitter:</td>
-                      <td class="my-twitter">(555) 555-5555</td>
+                      <td class="my-mastodon"><%=myMastodon%></td>
                  </tr>
                  <tr>
                       <td class="first-column">Diaspora*:</td>
-                      <td class="my-diaspora">(555) 555-5555</td>
+                      <td class="my-diaspora"><%=myDiaspora%></td>
                  </tr>
                  <tr>
                       <td class="first-column">WT.social:</td>
-                      <td class="my-wtsocial">(555) 555-5555</td>
+                      <td class="my-wtsocial"><%=myWtsocial%></td>
                  </tr>
                  <tr>
                       <td class="first-column">Minds:</td>
-                      <td class="my-minds">(555) 555-5555</td>
+                      <td class="my-minds"><%=myMinds%></td>
                  </tr>
                  <tr>
                       <td class="first-column">Discord:</td>
-                      <td class="my-discord">(555) 555-5555</td>
+                      <td class="my-discord"><%=myDiscord%></td>
                  </tr>
                  <tr>
                       <td class="first-column">Steam:</td>
-                      <td class="my-discord">(555) 555-5555</td>
+                      <td class="my-discord"><%=mySteam%></td>
                  </tr>
                  <tr>
                       <td class="first-column">Personal Website:</td>
-                      <td class="my-website">(555) 555-5555</td>
+                      <td class="my-website"><%=myWebsite%></td>
                  </tr>
                </table>
-               <div class="fb-login-button mt-2 mb-4" data-size="large" data-button-type="continue_with" data-layout="default" data-auto-logout-link="true" data-use-continue-as="true" data-width=""></div>
+          </div>
+          <div class="section-two col-lg-6 col-md-6 col-sm-12">
+               <h2 message mb-3 friend-details-header>Review the details you provided</h2>
+               <table class="contact-details" style="width:100%">
+                    <tr>
+                         <td class="first-column">Name:</td>
+                         <td class="my-email"><%=storedName%></td>
+                    </tr>
+                 <tr>
+                      <td class="first-column">Email:</td>
+                      <td class="my-email"><%=storedEmail%></td>
+                 </tr>
+                 <tr>
+                      <td class="first-column">Phone #:</td>
+                      <td class="my-phone"><%=storedPhone%></td>
+                 </tr>
+                 <tr>
+                      <td class="first-column">Mastodon:</td>
+                      <td class="my-mastodon"><%=storedMastodon%></td>
+                 </tr>
+                 <tr>
+                      <td class="first-column">Twitter:</td>
+                      <td class="my-twitter"><%=storedTwitter%></td>
+                 </tr>
+                 <tr>
+                      <td class="first-column">Diaspora*:</td>
+                      <td class="my-diaspora"><%=storedDiaspora%></td>
+                 </tr>
+                 <tr>
+                      <td class="first-column">WT.social:</td>
+                      <td class="my-wtsocial"><%=storedWtsocial%></td>
+                 </tr>
+                 <tr>
+                      <td class="first-column">Minds:</td>
+                      <td class="my-minds"><%=storedMinds%></td>
+                 </tr>
+                 <tr>
+                      <td class="first-column">Discord:</td>
+                      <td class="my-discord"><%=storedDiscord%></td>
+                 </tr>
+                 <tr>
+                      <td class="first-column">Steam:</td>
+                      <td class="my-discord"><%=storedSteam%></td>
+                 </tr>
+                 <tr>
+                      <td class="first-column">Personal Website:</td>
+                      <td class="my-website"><%=storedWebsite%></td>
+                 </tr>
+                 <tr>
+                      <td class="first-column">Other Details:</td>
+                      <td class="my-website"><%=storedOther%></td>
+                 </tr>
+               </table>
+
+               <a class="btn btn-primary contact-details details-button" href="/quitting-facebook/update">
+               Change
+               </a>
+               <a class="btn btn-outline-danger contact-details details-button" href="/quitting-facebook/delete">
+               <span class="fa fa-trash"></span>  Delete
+               </a>
           </div>
      </div>
 </div>

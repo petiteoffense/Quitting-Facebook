@@ -3,17 +3,12 @@
 require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
-// const https = require("https");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
 const encrypt = require("mongoose-encryption");
 const session = require("express-session");
-// const passport = require("passport");
-const passportLocalMongoose = require("passport-local-mongoose");
 const passport = require('passport')
   , FacebookStrategy = require('passport-facebook').Strategy;
-
-// const configAuth = require("/config/auth");
 
 const app = express();
 
@@ -35,48 +30,29 @@ mongoose.connect(process.env.MONGO_CONNECT, {useNewUrlParser: true, useUnifiedTo
 mongoose.set("useCreateIndex", true);
 
 const friendsSchema = new mongoose.Schema ( {
-     dateofentry: String,
-     // {
-     //      type: String,
-     //      required: true
-     //},
-     // facebook: {
-     //      provider: String,
-     //      id: String,
-     //      // {
-     //      //      type: String,
-     //      //      required: true
-     //      //},
-     //      displayName: String,
-     //      // {
-     //      //      type: String,
-     //      //      required: true
-     //      //},
-     //      name: {
-     //           familyName: String,
-     //           givenName: String,
-     //           middleName: String
-     //      },
-     //      emails: [
-     //           {
-     //           value: String,
-     //           type: String
-     //           }
-     //      ],
-     //      photos: [
-     //           {
-     //           value: String
-     //           }
-     //      ]
-     // },
+     previousSubmission: Boolean,
+     dateOfEntry: {
+          type: String,
+          required: true
+     },
+     dateOfLastUpdate: String,
      facebook: {
-          id: String,
-          token: String,
-          email: String,
-          name: String
+          id: {
+               type: String,
+               required: true
+          },
+          token: {
+               type: String,
+               required: true
+          },
+          displayName: {
+               type: String,
+               required: true
+          }
      },
      name: String,
      email: String,
+     phone: String,
      mastodon: String,
      twitter: String,
      diaspora: String,
@@ -85,20 +61,24 @@ const friendsSchema = new mongoose.Schema ( {
      discord: String,
      steam: String,
      website: String,
-     newsletter: String
+     newsletter: String,
+     otherInfo: String
 });
 
-// const usersSchema = new mongoose.Schema ({
-//      email: String,
-//      password: String
-// });
 
-friendsSchema.plugin(passportLocalMongoose);
-friendsSchema.plugin(encrypt, {secret: process.env.ENCRYPTION_KEY, encryptedFields: ["facebook", "email",  "mastodon", "twitter", "diaspora", "wtsocial", "minds", "discord", "steam", "website", "newsletter"]});
+// friendsSchema.plugin(encrypt, {secret: process.env.ENCRYPTION_KEY, encryptedFields: ["facebook", "email",  "mastodon", "twitter", "diaspora", "wtsocial", "minds", "discord", "steam", "website", "newsletter"]});
 
 const Friend = mongoose.model('Friend', friendsSchema);
-// const User = mongoose.model("User", usersSchema);
 
+passport.serializeUser(function(friend, done){
+     done(null, friend.id);
+});
+
+passport.deserializeUser(function(id, done){
+     Friend.findById(id, function(err, friend){
+          done(err, friend);
+     });
+});
 
 passport.use(new FacebookStrategy({
     clientID: process.env.FACEBOOK_APP_ID,
@@ -106,31 +86,6 @@ passport.use(new FacebookStrategy({
     callbackURL: process.env.CALLBACK_URL
   },
      function(accessToken, refreshToken, profile, done) {
-          //check user table for anyone with a facebook ID of profile.id
-         //  Friend.findOne({
-         //      'facebook.id': profile.id
-         // }, function(err, friend) {
-         //      if (err) {
-         //          return done(err);
-         //      }
-         //      //No user was found... so create a new user with values from Facebook (all the profile. stuff)
-         //      if (!friend) {
-         //          friend = new Friend ({
-         //              //now in the future searching on User.findOne({'facebook.id': profile.id } will match because of this next line
-         //              facebook: profile._json
-         //          });
-         //          friend.save(function(err) {
-         //              if (err) {
-         //                   console.log(err);
-         //                   res.render("failure");
-         //              }
-         //              return done(err, friend);
-         //          });
-         //      } else {
-         //          //found user. Return
-         //          return done(err, friend);
-         //      }
-         //  });
          process.nextTick(function(){
               Friend.findOne({"facebook.id": profile.id}, function(err, friend){
                    if (err) {
@@ -139,11 +94,16 @@ passport.use(new FacebookStrategy({
                    if (friend) {
                         return done(null, friend);
                    } else {
-                        const newFriend = new Friend();
-                        newFriend.facebook.id = profile.id;
-                        newFriend.facebook.token = accessToken;
-                        newFriend.facebook.name = profile.name.givenName + " " + profile.name.familyName;
-                        // newFriend.facebook.email = profile.emails[0].value;
+                        const date = new Date();
+
+                        const newFriend = new Friend({
+                             dateOfEntry: date,
+                             facebook: {
+                                  id: profile.id,
+                                  token: accessToken,
+                                  displayName: profile.displayName
+                              }
+                        });
 
                         newFriend.save(function(err){
                              if(err) {
@@ -158,52 +118,22 @@ passport.use(new FacebookStrategy({
          });
       }
   ));
-// passport.use(Friend.createStrategy());
-
-passport.serializeUser(function(friend, done){
-     done(null, friend.id);
-});
-
-passport.deserializeUser(function(id, done){
-     Friend.findById(id, function(err, friend){
-          done(err, friend);
-     });
-});
-
-// const friendTest = new Friend ( {
-//      name: "Bob Test",
-//      email: "test@example.com",
-//      mastodon: "test@mastodon.online",
-//      twitter: "@TestBob",
-//      diaspora: "test@diasporchg",
-//      wtsocial: "BobTest",
-//      minds: "BobTest99",
-//      discord: "BobTheBest",
-//      steam: "BobTheBest",
-//      website: "bobwebsite.me",
-//      newsletter: "Yes, for anything"
-// });
-//
-// friendTest.save();
-//
-// Friend.find(function(err, friend){
-//      if (err) {
-//           console.log(err);
-//      } else {
-//           console.log(friend);
-//      }
-// });
-
-// friendTest2.decrypt(function(err){
-//     if (err) { return handleError(err); }
-//     console.log(joe.name); // Joe
-//     console.log(joe.age); // 42
-//     console.log(joe._ct); // undefined
-//   });
 
 app.get("/quitting-facebook", function(req, res){
+     res.render("password-wall");
+});
 
-     res.render("quitting-facebook");
+app.post("/quitting-facebook", function(req, res){
+     const enteredPassword = req.body.password;
+     const storedPassword = process.env.PASSWORD;
+
+     if (enteredPassword === storedPassword) {
+          res.render("quitting-facebook");
+     } else {
+          res.render("failure");
+     }
+
+
 });
 
 // Redirect the user to Facebook for authentication.  When complete,
@@ -215,65 +145,166 @@ app.get('/quitting-facebook/auth/facebook', passport.authenticate('facebook'));
 // authentication process by attempting to obtain an access token.  If
 // access was granted, the user will be logged in.  Otherwise,
 // authentication has failed.
-app.get('/quitting-facebook/auth/facebook/callback',
-  passport.authenticate('facebook', { successRedirect: '/quitting-facebook/form',
-                                      failureRedirect: '/quitting-facebook/failure' }));
+app.get('/quitting-facebook/auth/facebook/form',
+     passport.authenticate('facebook', {
+          failureRedirect: '/quitting-facebook/failure'
+     }),
+     function(req, res) {
+          // Successful authentication
+          res.redirect("/quitting-facebook/form");
 
-// app.get("/quitting-facebook/authenticate", function(req, res){
-//      var facebookResponse = FB.getLoginStatus(function(response) {
-//           statusChangeCallback(response);
-//           });
-//
-//      if (facebookResponse === "connected") {
-//           res.render("form");
-//      } else if (facebookResponse === "not_authorized") {
-//           // umm like store a session cookie or something?
-//           // then
-//           //save relevant fb info to database
-//           // then
-//           FB.login(function(response) {
-//                if (response.status === "connected") { //should also probably double-check that a document has been created with the fb info
-//                     res.render("form");
-//                } else {
-//                     res.render("failure");
-//                }
-//           });
-//      } else if (facebookResponse === "unknown") {
-//           FB.login(function(response) {
-//                if (response.status === "connected") { //should also probably double-check that a document has been created with the fb info
-//                     // umm like store a session cookie or something?
-//                     // then
-//                     //save relevant fb info to database
-//                     // then
-//                     res.render("form");
-//                } else {
-//                     res.render("failure");
-//                }
-//           });
-//      } else {
-//           res.render("failure");
-//      }
-// });
+     });
 
 app.get("/quitting-facebook/form", function(req, res){
-     res.render("form");
+     if (req.isAuthenticated()){
+          if (req.user.previousSubmission === true) {
+               res.redirect("/quitting-facebook/update");
+          } else {
+               const fbDisplayName = req.user.facebook.displayName;
+               res.render('form', {fbDisplayName: fbDisplayName});
+          }
+     } else {
+          res.redirect("/quitting-facebook");
+     }
 });
 
-app.get("/quitting-facebook/success", function(req, res){
-     res.render("success");
+app.post("/quitting-facebook/form", function(req, res){
+     if (req.isAuthenticated()){
+          const date = new Date();
+
+          Friend.updateOne({"facebook.id": req.user.facebook.id}, {
+               "previousSubmission": true,
+               "dateOfLastUpdate": date,
+               "name": req.body.name,
+               "phone": req.body.phoneNumber,
+               "email": req.body.email,
+               "mastodon": req.body.mastodonHandle,
+               "twitter": req.body.twitterHandle,
+               "diaspora": req.body.diasporaUser,
+               "wtsocial": req.body.wtsocialUser,
+               "minds": req.body.mindsUser,
+               "discord": req.body.discordUser,
+               "steam": req.body.steamUser,
+               "website": req.body.blog,
+               "newsletter": req.body.newsletter,
+               "otherInfo": req.body.other
+          }, function(err){
+               if (err) {
+                    console.log(err);
+                    res.render("failure");
+               } else {
+                    const storedName = req.body.name;
+                    const storedPhone = req.body.phoneNumber;
+                    const storedEmail = req.body.email;
+                    const storedMastodon = req.body.mastodonHandle;
+                    const storedTwitter = req.body.twitterHandle;
+                    const storedDiaspora = req.body.diasporaUser;
+                    const storedWtsocial = req.body.wtsocialUser;
+                    const storedMinds = req.body.mindsUser;
+                    const storedDiscord = req.body.discordUser;
+                    const storedSteam = req.body.steamUser;
+                    const storedWebsite = req.body.blog;
+                    const storedNewsletter = req.body.newsletter;
+                    const storedOther = req.body.other;
+
+                    const myEmail = process.env.MY_EMAIL;
+                    const myPhone = process.env.MY_PHONE;
+                    const myMastodon = process.env.MY_MASTODON;
+                    const myDiaspora = process.env.MY_DIASPORA;
+                    const myWtsocial = process.env.MY_WTSOCIAL;
+                    const myMinds = process.env.MY_MINDS;
+                    const myDiscord = process.env.MY_DISCORD;
+                    const mySteam = process.env.MY_STEAM;
+                    const myWebsite = process.env.MY_WEBSITE;
+
+
+                    res.render('success', {
+                         storedName: storedName,
+                         storedEmail: storedEmail,
+                         storedPhone: storedPhone,
+                         storedMastodon: storedMastodon,
+                         storedTwitter: storedTwitter,
+                         storedDiaspora: storedDiaspora,
+                         storedWtsocial: storedWtsocial,
+                         storedMinds: storedMinds,
+                         storedDiscord: storedDiscord,
+                         storedSteam: storedSteam,
+                         storedWebsite: storedWebsite,
+                         storedNewsletter: storedNewsletter,
+                         storedOther: storedOther,
+                         myEmail: myEmail,
+                         myPhone: myPhone,
+                         myMastodon: myMastodon,
+                         myDiaspora: myDiaspora,
+                         myWtsocial: myWtsocial,
+                         myMinds: myMinds,
+                         myDiscord: myDiscord,
+                         mySteam: mySteam,
+                         myWebsite: myWebsite
+                    });
+               }
+          });
+     } else {
+          res.redirect("/quitting-facebook");
+     }
 });
 
-app.get("/quitting-facebook/failure", function(req, res){
-     res.render("failure");
+
+app.get("/quitting-facebook/update", function(req, res){
+     if (req.isAuthenticated()){
+          const storedName = req.user.name;
+          const storedEmail = req.user.email;
+          const storedPhone = req.user.phone;
+          const storedMastodon = req.user.mastodon;
+          const storedTwitter = req.user.twitter;
+          const storedDiaspora = req.user.diaspora;
+          const storedWtsocial = req.user.wtsocial;
+          const storedMinds = req.user.minds;
+          const storedDiscord = req.user.discord;
+          const storedSteam = req.user.steam;
+          const storedWebsite = req.user.website;
+          const storedNewsletter = req.user.newsletter;
+          const storedOther = req.user.otherInfo;
+
+          res.render('update', {
+               storedName: storedName,
+               storedEmail: storedEmail,
+               storedPhone: storedPhone,
+               storedMastodon: storedMastodon,
+               storedTwitter: storedTwitter,
+               storedDiaspora: storedDiaspora,
+               storedWtsocial: storedWtsocial,
+               storedMinds: storedMinds,
+               storedDiscord: storedDiscord,
+               storedSteam: storedSteam,
+               storedWebsite: storedWebsite,
+               storedNewsletter: storedNewsletter,
+               storedOther: storedOther
+          });
+     } else {
+          res.redirect("/quitting-facebook");
+     }
 });
 
-// app.post("/", function(req, res){
-//
-// });
-//
-// app.post("/failure", function(req, res){
-//      res.redirect("/");
-// });
+app.get("/quitting-facebook/delete", function(req, res){
+     if (req.isAuthenticated()){
+
+          Friend.deleteOne({"facebook.id": req.user.facebook.id}, function(err){
+               if(err) {
+                    console.log(err);
+                    res.render("failure");
+               } else {
+                    res.render("success-delete");
+               }
+          });
+     } else {
+          res.redirect("failure");
+     }
+});
+
+app.get("/quitting-facebook/privacy-policy", function(req, res){
+     res.render("privacy-policy");
+});
 
 app.listen(process.env.PORT || 3000, function(){
      console.log("Server is running on port 3000.");
