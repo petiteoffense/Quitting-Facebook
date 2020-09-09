@@ -163,7 +163,7 @@ app.post("/quitting-facebook", function(req, res){
 
 // Redirect the user to Facebook for authentication.  When complete,
 // Facebook will redirect the user back to the application at
-//     /auth/facebook/callback
+//     /auth/facebook/form
 app.get('/quitting-facebook/auth/facebook', passport.authenticate('facebook'));
 
 // Facebook will redirect the user to this URL after approval.  Finish the
