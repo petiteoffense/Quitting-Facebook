@@ -1,0 +1,35 @@
+<%- include("header") %>
+
+<div class="container-fluid">
+     <h1 class="simple">Privacy Policy</h1>
+
+     <p class="simple">
+          This is an informal app meant to enable my personal friends to quickly and easily
+     send me their contact details, but in order to enable authentication,
+     the Facebook API requires me to provide a privacy policy.</p>
+     <p class="simple">I will not share or sell the contact details you provide through this form.</p>
+     <p class="simple">The data will temporarily be stored on a web server that I do not own--that is an
+     AWS server via MongoDB Atlas. The contact detail fields will be encrypted at
+     rest, but the company that serves up my web app, Heroku, will have access to the
+     private key. If you have concerns about their ability to access your data,
+     I recommend referring to their privacy policy and/or sending your information
+     to me by some other manner.</p>
+     <p class="simple">No more than 3 months from the time of entry, I will delete your information from
+     the online database, after which it will be locally stored on my personal devices.</p>
+     <p class="simple">Most of the data will come from whatever you choose to enter in the provided form.
+     Date of submission will also be stored. The only data I store from the Facebook API is your unique
+      Facebook user ID, your display name, and the access token that allows me to access that data. It was
+     initially my impression that without a request for further permissions the API would also return your
+     given, family, and middle names, your email addresses as registered with Facebook,
+     your profile url, and your profile photo, but while I would have liked to automatically
+     store your email, profile url, and profile photo, I can't figure out how to access them.
+     So either I've misunderstood the permissions Facebook has allowed me, or I just don't fully
+     understand the code. Regardless, these details won't be stored by the app except as provided by
+     you in the submitted form.</p>
+     <p class="simple">The primary purpose of Facebook authentication is to reduce the opportunity for
+     anyone to enter false contact information under your name. And because I wanted to practice
+     implementing OAuth, tbh.</p>
+
+</div>
+
+<%- include("footer") %>
