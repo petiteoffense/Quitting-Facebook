@@ -18,6 +18,30 @@ mongoose.connect(process.env.MONGO_CONNECT, { useNewUrlParser: true, useUnifiedT
 mongoose.set("useCreateIndex", true);
 
 
+const friendsContactSchema = new mongoose.Schema({
+     dateOfEntry: {
+          type: String,
+          required: true
+     },
+     name: String,
+     email: String,
+     phone: String,
+     mastodon: String,
+     twitter: String,
+     diaspora: String,
+     wtsocial: String,
+     minds: String,
+     discord: String,
+     steam: String,
+     website: String,
+     newsletter: String,
+     otherInfo: String
+});
+
+
+friendsContactSchema.plugin(encrypt, { secret: process.env.ENCRYPTION_KEY, encryptedFields: ["dateOfEntry", "dateOfLastUpdate", "facebook.displayName", "phone", "email", "mastodon", "twitter", "diaspora", "wtsocial", "minds", "discord", "steam", "website", "newsletter", "otherInfo"] });
+
+const Contact = mongoose.model('Contact', friendsContactSchema);
 
 app.get("/quitting-facebook", function (req, res) {
      res.render("quitting-facebook");
@@ -40,7 +64,7 @@ app.post("/quitting-facebook/form", function (req, res) {
 
      const date = new Date();
 
-     const updatedContact = new Contact({
+     const newContact = new Contact({
           dateOfEntry: date,
           name: req.body.name,
           phone: req.body.phoneNumber,
@@ -57,12 +81,12 @@ app.post("/quitting-facebook/form", function (req, res) {
           otherInfo: req.body.other
      });
 
-     updatedContact.save(function (err) {
+     newContact.save(function (err) {
           if (err) {
                console.log(err);
                res.render("failure");
-          }
-
+          } else {
+               
           //prepare submitted data to be passed into the success page for review
           const storedName = req.body.name;
           const storedPhone = req.body.phoneNumber;
@@ -114,6 +138,8 @@ app.post("/quitting-facebook/form", function (req, res) {
                mySteam: mySteam,
                myWebsite: myWebsite
           });
+
+          }
      });
 });
 

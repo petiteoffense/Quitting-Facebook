@@ -85,18 +85,6 @@ label {
      align-items: center;
 }
 
-.btn-continue {
-     margin-left: 38%;
-     width: 24%;
-}
-
-@media only screen and (max-width: 1024px) {
-  .btn-continue {
-     margin-left: 23%;
-    width: 54%;
-  }
-}
-
 .first-column {
      font-weight: bold;
      padding-right: 10px;
