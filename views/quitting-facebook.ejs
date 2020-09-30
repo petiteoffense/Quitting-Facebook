@@ -11,12 +11,12 @@
           <div class="section-two col-lg-6 col-md-6 col-sm-12">
                <img class="headshot" src="/images/me.png" width="200" height="200">
                <h2 class="mb-3">But I'd love to stay in touch!</h2>
-               <p class="mb-3 font-weight-normal">Please authenticate with Facebook before sending your contact info:</p>
-               <a class="btn btn-block btn-social btn-facebook" href="/quitting-facebook/auth/facebook">
-                    <span class="fa fa-facebook"></span> Authenticate
-               </a>
-               <h2 class="mb-3 font-weight-normal helper-text">Why?</h2>
-               <p class="helper-text px-lg-5">Authenticating with Facebook will help me prevent anyone from entering false info on you and will automatically pass me your display name.</p>
+               <p class="mb-3 font-weight-normal">Please enter password before sending your contact info:</p>
+  
+               <form action="/quitting-facebook" method="post">
+                    <input type="password" name="password" placeholder="password" autofocus>
+                    <button class="btn btn-primary btn-continue" type="submit" name="button">Continue</button>
+               </form>
           </div>
      </div>
 </div>
